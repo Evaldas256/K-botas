@@ -14,8 +14,9 @@ from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout, QMessageBox,
                              QWidget)
 from PyQt5 import QtWidgets
 from Langai import Ui
+import grafiko_vaizdas
+import nustatymu_langas
 
-laikas=30
 valiuta = 'ADA-EUR'
 lenteles_eilute = 0
 einama_eilute = 0
@@ -29,7 +30,7 @@ try:
     with open('sekamos_valiutos.pkl', 'rb') as pickle_in:
         sekamos_valiutos = pickle.load(pickle_in)
 except:
-    sekamos_valiutos = ['BTC-EUR']
+    sekama_valiutos = ['BTC-EUR']
 
 try:
     with open('el_pasto_duomenys.pkl', 'rb') as pickle_in:
@@ -57,7 +58,19 @@ Subject: Reikia parduoti
 
 This message is sent from Python."""
 
+app = QApplication([])
+qw = QMainWindow()
 
+win = QGraphicsView()
+
+qw.setWindowTitle('Kripto botas')
+
+layout = QGridLayout()
+win.setLayout(layout)
+win.resize(600, 500)
+centralwidget = win
+qw.setCentralWidget(centralwidget)
+qw.resize(600, 500)
 
 
 class AnotherWindow(QWidget):
@@ -97,6 +110,8 @@ class AnotherWindow(QWidget):
         self.table = QTableWidget()
         self.table.setRowCount(len(sekamos_valiutos))
         self.table.setColumnCount(8)
+        # self.table.setModel(self.model)
+        # self.table.alternatingRowColors()
         self.table.clicked.connect(self.nuskaityti_kursoriaus_pozicija)
         self.atnaujinti_lentele()
 
@@ -129,7 +144,7 @@ class AnotherWindow(QWidget):
         self.end_button = QPushButton('Baigti sekima', self)
         self.end_button.clicked.connect(self.endTimer)
 
-
+        # self.dataView.setModel(self.model)
 
         entry_layout = QGridLayout()
         entry_layout.addWidget(self.valiutu_sarasas_label, 0, 0)
@@ -151,8 +166,10 @@ class AnotherWindow(QWidget):
         entry_layout.addWidget(self.end_button, 0, 8)
 
         entry_layout.addWidget(self.table, 3, 0, 1, 8)
-        self.setLayout(entry_layout)
+        # entry_layout.addWidget(self.dataView,4,4)
 
+        self.setLayout(entry_layout)
+        # self.atnaujinti_lentele()
 
         self.show()
 
@@ -299,50 +316,41 @@ class AnotherWindow(QWidget):
         self.show_message("Duomenys sėkmingai ištrinti", 'information')
 
     def atnaujinti_grafikus(self):
-        global laikas
-        if laikas==0:
-            qw.myMessage.setText(f" Atnaujinami duomenys ")
-            valiutos_duomenys = []
-            global axs_dic
-            global plots
-            for key in plots:
-                currency = key.split()[0]
+        valiutos_duomenys = []
+        global axs_dic
+        global plots
+        for key in plots:
+            currency = key.split()[0]
 
-                df = get_crypto_data(currency)
+            df = get_crypto_data(currency)
 
-                if key.split()[1] == 'Candelstics':
-                    plots[key].update_data(df[['Date', 'HA_Open', 'HA_Close', 'HA_High', 'HA_Low']])
-                if key.split()[1] == 'Ema':
-                    plots[key].update_data(df[['Date', 'EMA_200']])
-                if key.split()[1] == 'Close':
-                    plots[key].update_data(df[['Date', 'Close']])
-                if key.split()[1] == 'Rsi':
-                    plots[key].update_data(df[['Date', 'rsi']])
+            if key.split()[1] == 'Candelstics':
+                plots[key].update_data(df[['Date', 'HA_Open', 'HA_Close', 'HA_High', 'HA_Low']])
+            if key.split()[1] == 'Ema':
+                plots[key].update_data(df[['Date', 'EMA_200']])
+            if key.split()[1] == 'Close':
+                plots[key].update_data(df[['Date', 'Close']])
+            if key.split()[1] == 'Rsi':
+                plots[key].update_data(df[['Date', 'rsi']])
 
-            a = 0
+        a = 0
 
-            for q in sekamos_valiutos:
-                sutrumpinti_rezultatai = []
-                df = get_crypto_data(q[0])
-                lst_row = df.tail(1)
+        for q in sekamos_valiutos:
+            sutrumpinti_rezultatai = []
+            df = get_crypto_data(q[0])
+            lst_row = df.tail(1)
 
-                close_value = lst_row['Close'].values
+            close_value = lst_row['Close'].values
 
-                rsi_value = lst_row['rsi'].values
-                ema_200_value = lst_row['EMA_200'].values
+            rsi_value = lst_row['rsi'].values
+            ema_200_value = lst_row['EMA_200'].values
 
-                self.table.setItem(a, 5, QTableWidgetItem(str(close_value[0])))
-                self.table.setItem(a, 6, QTableWidgetItem(str(rsi_value[0])))
-                self.table.setItem(a, 7, QTableWidgetItem(str(ema_200_value[0])))
-                sutrumpinti_rezultatai = [close_value[0], rsi_value[0], ema_200_value[0]]
-                self.ar_reikia_informuoti(sutrumpinti_rezultatai, q)
-                a += 1
-                laikas=30
-
-        else:
-            laikas-=1
-            qw.myMessage.setText(f"Iki atnaujinimo liko {laikas} s ")
-
+            self.table.setItem(a, 5, QTableWidgetItem(str(close_value[0])))
+            self.table.setItem(a, 6, QTableWidgetItem(str(rsi_value[0])))
+            self.table.setItem(a, 7, QTableWidgetItem(str(ema_200_value[0])))
+            sutrumpinti_rezultatai = [close_value[0], rsi_value[0], ema_200_value[0]]
+            self.ar_reikia_informuoti(sutrumpinti_rezultatai, q)
+            a += 1
 
     def ar_reikia_informuoti(self, sutrumpinti_rezultatai, valiutos_duomenys):
         global flag
@@ -405,7 +413,7 @@ class AnotherWindow(QWidget):
                 server.sendmail(sender_email, el_pastas, message_reikia_parduoti)
 
     def startTimer(self):
-        self.timer.start(1000)
+        self.timer.start(30000)
         self.start_button.setEnabled(False)
         self.end_button.setEnabled(True)
         qw.myMessage.setText("Duomenų atnaujinimas kas 30s")
@@ -512,19 +520,6 @@ def atnaujinti_tabus():
         flag[tabas[0]] = 0
     layout.addWidget(tabs, 4, 0, 1, 2)
 
-app = QApplication([])
-qw = QMainWindow()
-
-win = QGraphicsView()
-
-qw.setWindowTitle('Kripto botas')
-
-layout = QGridLayout()
-win.setLayout(layout)
-win.resize(600, 500)
-centralwidget = win
-qw.setCentralWidget(centralwidget)
-qw.resize(600, 500)
 
 valiuta = get_currrency_list()
 w = None
@@ -532,8 +527,10 @@ el_pasto_nustatymo_langas = None
 menu = qw.menuBar()
 button_action = QAction("&Sekimo nustatymai")
 button_action.triggered.connect(onMyToolBarButtonClick)
+
 button_action2 = QAction("&El_pasto nustatymai")
 button_action2.triggered.connect(onMyToolBarButtonClick2)
+
 file_menu = menu.addMenu("&Nustatymai")
 file_menu.addAction(button_action)
 file_menu.addAction(button_action2)
