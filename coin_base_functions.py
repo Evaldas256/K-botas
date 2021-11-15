@@ -252,7 +252,6 @@ def signal(macd):
     signal = macd.ewm(span=9, adjust=False).mean()
     return signal
 
-
 def plot_rsi(df):
     df['rsi'] = ''
     diff = df.Close.diff().values

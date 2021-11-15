@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets, uic
 import sys
 import pickle
-from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout,QMessageBox,
+from PyQt5.QtWidgets import QMessageBox,
                              QLabel, QLineEdit,
                              QTableWidgetItem,
                              QWidget)
