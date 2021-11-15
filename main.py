@@ -16,7 +16,7 @@ from PyQt5 import QtWidgets
 from Langai import Ui
 import grafiko_vaizdas
 import nustatymu_langas
-
+laikas=30
 valiuta = 'ADA-EUR'
 lenteles_eilute = 0
 einama_eilute = 0
@@ -316,41 +316,49 @@ class AnotherWindow(QWidget):
         self.show_message("Duomenys sėkmingai ištrinti", 'information')
 
     def atnaujinti_grafikus(self):
-        valiutos_duomenys = []
-        global axs_dic
-        global plots
-        for key in plots:
-            currency = key.split()[0]
+        global laikas
+        if laikas==0:
+            qw.myMessage.setText("Atnaujinami duomenys ")
+            valiutos_duomenys = []
+            global axs_dic
+            global plots
+            for key in plots:
+                currency = key.split()[0]
 
-            df = get_crypto_data(currency)
+                df = get_crypto_data(currency)
 
-            if key.split()[1] == 'Candelstics':
-                plots[key].update_data(df[['Date', 'HA_Open', 'HA_Close', 'HA_High', 'HA_Low']])
-            if key.split()[1] == 'Ema':
-                plots[key].update_data(df[['Date', 'EMA_200']])
-            if key.split()[1] == 'Close':
-                plots[key].update_data(df[['Date', 'Close']])
-            if key.split()[1] == 'Rsi':
-                plots[key].update_data(df[['Date', 'rsi']])
+                if key.split()[1] == 'Candelstics':
+                    plots[key].update_data(df[['Date', 'HA_Open', 'HA_Close', 'HA_High', 'HA_Low']])
+                if key.split()[1] == 'Ema':
+                    plots[key].update_data(df[['Date', 'EMA_200']])
+                if key.split()[1] == 'Close':
+                    plots[key].update_data(df[['Date', 'Close']])
+                if key.split()[1] == 'Rsi':
+                    plots[key].update_data(df[['Date', 'rsi']])
 
-        a = 0
+            a = 0
 
-        for q in sekamos_valiutos:
-            sutrumpinti_rezultatai = []
-            df = get_crypto_data(q[0])
-            lst_row = df.tail(1)
+            for q in sekamos_valiutos:
+                sutrumpinti_rezultatai = []
+                df = get_crypto_data(q[0])
+                lst_row = df.tail(1)
 
-            close_value = lst_row['Close'].values
+                close_value = lst_row['Close'].values
 
-            rsi_value = lst_row['rsi'].values
-            ema_200_value = lst_row['EMA_200'].values
+                rsi_value = lst_row['rsi'].values
+                ema_200_value = lst_row['EMA_200'].values
 
-            self.table.setItem(a, 5, QTableWidgetItem(str(close_value[0])))
-            self.table.setItem(a, 6, QTableWidgetItem(str(rsi_value[0])))
-            self.table.setItem(a, 7, QTableWidgetItem(str(ema_200_value[0])))
-            sutrumpinti_rezultatai = [close_value[0], rsi_value[0], ema_200_value[0]]
-            self.ar_reikia_informuoti(sutrumpinti_rezultatai, q)
-            a += 1
+                self.table.setItem(a, 5, QTableWidgetItem(str(close_value[0])))
+                self.table.setItem(a, 6, QTableWidgetItem(str(rsi_value[0])))
+                self.table.setItem(a, 7, QTableWidgetItem(str(ema_200_value[0])))
+                sutrumpinti_rezultatai = [close_value[0], rsi_value[0], ema_200_value[0]]
+                self.ar_reikia_informuoti(sutrumpinti_rezultatai, q)
+                a += 1
+                laikas=30
+        else:
+            laikas-=1
+            qw.myMessage.setText(f"Iki duomenų atnaujinimo liko {laikas} s ")
+
 
     def ar_reikia_informuoti(self, sutrumpinti_rezultatai, valiutos_duomenys):
         global flag
@@ -413,7 +421,7 @@ class AnotherWindow(QWidget):
                 server.sendmail(sender_email, el_pastas, message_reikia_parduoti)
 
     def startTimer(self):
-        self.timer.start(30000)
+        self.timer.start(1000)
         self.start_button.setEnabled(False)
         self.end_button.setEnabled(True)
         qw.myMessage.setText("Duomenų atnaujinimas kas 30s")
