@@ -532,8 +532,10 @@ el_pasto_nustatymo_langas = None
 menu = qw.menuBar()
 button_action = QAction("&Sekimo nustatymai")
 button_action.triggered.connect(onMyToolBarButtonClick)
+
 button_action2 = QAction("&El_pasto nustatymai")
 button_action2.triggered.connect(onMyToolBarButtonClick2)
+
 file_menu = menu.addMenu("&Nustatymai")
 file_menu.addAction(button_action)
 file_menu.addAction(button_action2)
