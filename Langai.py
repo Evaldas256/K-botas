@@ -13,6 +13,7 @@ class Ui(QtWidgets.QDialog):
         self.cancelButton.clicked.connect(self.iseiti_is_formos)
         self.msg = QMessageBox()
         self.msg.setWindowTitle("Kripto botas")
+        self.password_lineEdit.setEchoMode(QLineEdit.Password)
         try:
             with open('el_pasto_duomenys.pkl', 'rb') as pickle_in:
                 self.el_pasto_duomenys = pickle.load(pickle_in)
