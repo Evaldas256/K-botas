@@ -2,9 +2,7 @@ import matplotlib.pyplot as plt
 import requests
 import re
 from datetime import datetime
-
 from ta.trend import VortexIndicator
-
 import numpy as np
 
 eth_ammount = 0.03434581

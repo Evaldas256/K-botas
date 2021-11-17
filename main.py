@@ -6,17 +6,18 @@ import ssl
 import smtplib
 from PyQt5.QtWidgets import QDesktopWidget, QMainWindow, QAction, QGraphicsView, \
     QTabWidget, QTableWidget, QPushButton
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QStandardItemModel
 from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout, QMessageBox,
                              QLabel, QLineEdit,
                              QTableWidgetItem,
                              QWidget)
-from PyQt5 import QtWidgets
+
+from PyQt5 import QtWidgets, QtGui
 from Langai import Ui
-import grafiko_vaizdas
-import nustatymu_langas
-laikas=30
+from email.message import EmailMessage
+
+laikas = 30
 valiuta = 'ADA-EUR'
 lenteles_eilute = 0
 einama_eilute = 0
@@ -25,13 +26,14 @@ plots = {}
 axs_dic = {}
 flag = {}
 strategiju_sarasas = ['Pagal_RSI', 'Pagal_kaina']
-
+print("Programa kraunasi, prašome palaukti.....")
+# sekamu valiutu duomenu ikelimas is failo
 try:
     with open('sekamos_valiutos.pkl', 'rb') as pickle_in:
         sekamos_valiutos = pickle.load(pickle_in)
 except:
     sekama_valiutos = ['BTC-EUR']
-
+# pasto serverio prisijungimo duomenu ikelimas is failo
 try:
     with open('el_pasto_duomenys.pkl', 'rb') as pickle_in:
         el_pasto_duomenys = pickle.load(pickle_in)
@@ -45,7 +47,7 @@ except:
     outgoing_server = ''
     port = ''
 
-print(sekamos_valiutos)
+# print(sekamos_valiutos)
 # For SSL
 context = ssl.create_default_context()
 
@@ -61,6 +63,8 @@ This message is sent from Python."""
 app = QApplication([])
 qw = QMainWindow()
 
+qw.setWindowIcon(QtGui.QIcon('ikonos/ikona.ico'))
+
 win = QGraphicsView()
 
 qw.setWindowTitle('Kripto botas')
@@ -73,6 +77,7 @@ qw.setCentralWidget(centralwidget)
 qw.resize(600, 500)
 
 
+# Kripto valiutos sekimo parametrų įvedimo lango klasė
 class AnotherWindow(QWidget):
     FROM, SUBJECT, DATE = range(3)
     Valiuta, Strategija, El_pastas, Pirkimo_kaina, Pardavimo_kaina, Close_price, RSI, EMA = range(8)
@@ -87,6 +92,9 @@ class AnotherWindow(QWidget):
         self.valiuta = valiuta
         self.initUI(valiuta)
 
+        self.setWindowIcon(QtGui.QIcon('ikonos/ikona.ico'))
+
+    # sukuriamas nustatymo lango vaidas, ikeliasmi sarasai i combobx'us
     def initUI(self, valiuta):
         global lenteles_eilute
 
@@ -97,21 +105,20 @@ class AnotherWindow(QWidget):
         self.top = center.y() - (self.height // 2)
         self.setWindowTitle(self.title)
         self.setGeometry(self.left, self.top, self.width, self.height)
+
         self.timer = QTimer()
         self.timer.timeout.connect(self.atnaujinti_grafikus)
         self.msg = QMessageBox()
         self.msg.setWindowTitle("Kripto botas")
-        # self.table = QtWidgets.QTableView()
+        self.msg.setWindowIcon(QtGui.QIcon('ikonos/ikona.ico'))
 
         self.column_headers = ['Valiuta', 'Strategija', 'El_pastas', 'Pirkimo_kaina', 'Pardavimo_kaina', 'Close_price',
                                'RSI', 'EMA']
         self.model = QStandardItemModel()
-        # self.table = QTableView()
+
         self.table = QTableWidget()
         self.table.setRowCount(len(sekamos_valiutos))
         self.table.setColumnCount(8)
-        # self.table.setModel(self.model)
-        # self.table.alternatingRowColors()
         self.table.clicked.connect(self.nuskaityti_kursoriaus_pozicija)
         self.atnaujinti_lentele()
 
@@ -129,22 +136,27 @@ class AnotherWindow(QWidget):
         self.Pirkimo_kaina_label = QLabel('Pirkimo kaina', self)
         self.Pardavimo_kaina_label = QLabel('Pardavimo kaina', self)
         self.Pardavimo_kaina_textbox = QLineEdit(self)
-        self.El_pastas_label = QLabel('El_pastas', self)
+        self.El_pastas_label = QLabel('El_paštas', self)
         self.El_pastas_textbox = QLineEdit(self)
 
-        self.ivesti_button = QPushButton('Ivesti', self)
+        self.ivesti_button = QPushButton('Įvesti', self)
+        self.ivesti_button.setIcon(QtGui.QIcon('ikonos/enter.ico'))
         self.ivesti_button.clicked.connect(self.on_click_ivesti_button)
-        self.redaguoti_button = QPushButton('Redaguoti', self)
+        self.redaguoti_button = QPushButton('Atnaujinti', self)
+        self.redaguoti_button.setIcon(QtGui.QIcon('ikonos/refresh.ico'))
         self.redaguoti_button.clicked.connect(self.on_click_redaguoti_button)
-        self.istrinti_button = QPushButton('Istrinti', self)
+        self.istrinti_button = QPushButton('Ištrinti', self)
+        self.istrinti_button.setIcon(QtGui.QIcon('ikonos/delete.ico'))
         self.istrinti_button.clicked.connect(self.on_click_istrinti_button)
 
-        self.start_button = QPushButton('Pradeti sekima', self)
+        self.start_button = QPushButton('Pradėti sekimą', self)
+        self.start_button.setIcon(QtGui.QIcon('ikonos/start.ico'))
         self.start_button.clicked.connect(self.startTimer)
-        self.end_button = QPushButton('Baigti sekima', self)
+        self.end_button = QPushButton('Baigti sekimą', self)
+        self.end_button.setIcon(QtGui.QIcon('ikonos/stop.ico'))
         self.end_button.clicked.connect(self.endTimer)
-
-        # self.dataView.setModel(self.model)
+        self.start_button.setEnabled(True)
+        self.end_button.setEnabled(False)
 
         entry_layout = QGridLayout()
         entry_layout.addWidget(self.valiutu_sarasas_label, 0, 0)
@@ -169,10 +181,10 @@ class AnotherWindow(QWidget):
         # entry_layout.addWidget(self.dataView,4,4)
 
         self.setLayout(entry_layout)
-        # self.atnaujinti_lentele()
 
         self.show()
 
+    # nustatoma, ant kokios lenteles eilutes pspaustas peles klavisas
     def nuskaityti_kursoriaus_pozicija(self):
         global sekamos_valiutos
         global einama_eilute
@@ -189,6 +201,7 @@ class AnotherWindow(QWidget):
         self.Pirkimo_kaina_textbox.setText(sekamos_valiutos[einama_eilute][3])
         self.Pardavimo_kaina_textbox.setText(sekamos_valiutos[einama_eilute][4])
 
+    # atnaujinama lentele po pakeitimu
     def atnaujinti_lentele(self):
         global lenteles_eilute
         lenteles_eilute = 0
@@ -198,19 +211,24 @@ class AnotherWindow(QWidget):
         w = 0
         for x in self.column_headers:
             self.item = QTableWidgetItem()
-            self.item.setText(x)
 
+            fontas=QtGui.QFont()
+            fontas.setBold(True)
+
+            self.item.setFont(fontas)
+            self.item.setText(x)
             self.table.setHorizontalHeaderItem(w, self.item)
             w += 1
 
         for x in sekamos_valiutos:
-
             for c in range(len(x)):
                 self.tekstas = QTableWidgetItem(x[c])
-
+                self.tekstas.setTextAlignment(Qt.AlignHCenter)
+                self.tekstas.setFlags(self.tekstas.flags() ^ Qt.ItemIsEditable)
                 self.table.setItem(lenteles_eilute, c, self.tekstas)
             lenteles_eilute += 1
 
+    # naujo iraso ivedimas i lentele ir issaugojimas faile
     def on_click_ivesti_button(self):
         global lenteles_eilute
         laikinas = []
@@ -239,6 +257,7 @@ class AnotherWindow(QWidget):
             pickle.dump(sekamos_valiutos, pickle_out)
         self.show_message("Duomenys sėkmingai įvesti", 'information')
 
+    # duomenu ataujinimas ir ivedimas i faila
     def on_click_redaguoti_button(self):
 
         global lenteles_eilute
@@ -269,6 +288,7 @@ class AnotherWindow(QWidget):
             pickle.dump(sekamos_valiutos, pickle_out)
         self.show_message("Duomenys atnaujinti sėkmingai", 'information')
 
+    # tikrinama, ar ivesta kaina yra logiska ir teisinga
     def check_price_valid(self, buy_price, sel_price, strategy):
         atsakymas = True
         buy = 0
@@ -297,6 +317,7 @@ class AnotherWindow(QWidget):
             self.msg.setIcon(QMessageBox.Information)
         x = self.msg.exec_()  # this will show our messagebox
 
+    # tikrinamas ivesto el_pasto formatas
     def check_if_email_valid(self, email):
         result = email.find('@')
         result2 = email.find('.')
@@ -315,10 +336,11 @@ class AnotherWindow(QWidget):
         atnaujinti_tabus()
         self.show_message("Duomenys sėkmingai ištrinti", 'information')
 
+    # atnaujinami grafikai pagal naujai gautus duomenis
     def atnaujinti_grafikus(self):
         global laikas
-        if laikas==0:
-            qw.myMessage.setText("Atnaujinami duomenys ")
+        if laikas == 0:
+
             valiutos_duomenys = []
             global axs_dic
             global plots
@@ -347,19 +369,30 @@ class AnotherWindow(QWidget):
 
                 rsi_value = lst_row['rsi'].values
                 ema_200_value = lst_row['EMA_200'].values
+                self.item=QTableWidgetItem(str(close_value[0]))
+                self.item.setTextAlignment(Qt.AlignHCenter)
+                self.table.setItem(a, 5, self.item)
 
-                self.table.setItem(a, 5, QTableWidgetItem(str(close_value[0])))
-                self.table.setItem(a, 6, QTableWidgetItem(str(rsi_value[0])))
-                self.table.setItem(a, 7, QTableWidgetItem(str(ema_200_value[0])))
+                self.item = QTableWidgetItem(str(round(rsi_value[0],4)))
+                self.item.setTextAlignment(Qt.AlignHCenter)
+
+                self.table.setItem(a, 6,self.item )
+
+                self.item = QTableWidgetItem(str(round(ema_200_value[0],4)))
+                self.item.setTextAlignment(Qt.AlignHCenter)
+
+                self.table.setItem(a, 7, self.item)
                 sutrumpinti_rezultatai = [close_value[0], rsi_value[0], ema_200_value[0]]
                 self.ar_reikia_informuoti(sutrumpinti_rezultatai, q)
                 a += 1
-                laikas=30
+                laikas = 30
         else:
-            laikas-=1
+            laikas -= 1
             qw.myMessage.setText(f"Iki duomenų atnaujinimo liko {laikas} s ")
+            if laikas==0:
+                qw.myMessage.setText("Palaukite, atnaujinami duomenys ")
 
-
+    # tikrinama, ar valiutos kurso informacija atitinka ivestus informavimo kriterijus
     def ar_reikia_informuoti(self, sutrumpinti_rezultatai, valiutos_duomenys):
         global flag
 
@@ -394,6 +427,7 @@ class AnotherWindow(QWidget):
                     self.send_email(el_pastas, -1, valiuta, close)
                     flag[valiuta] = -1
 
+    # El_pasto pranesimo siuntimas
     def send_email(self, el_pastas, email_theme, valiuta, close):
         global sender_email
         global outgoing_server
@@ -401,32 +435,64 @@ class AnotherWindow(QWidget):
         global password
         global context
         message_reikia_pirkti = f"""\
-        Subject: Reikia pirkti {valiuta}
-
-        Kaina {close}"""
-
+            To: {el_pastas}
+            Subject: Reikia pirkti {valiuta}
+            
+            Kaina {close}
+            """
         message_reikia_parduoti = f"""\
-        Subject: Reikia parduoti {valiuta}
+            To: {el_pastas}
+            Subject: Reikia parduoti {valiuta}
+            
+            Kaina {close}
+            """
+        msg = EmailMessage()
 
-        Kaina {close}."""
+        sender_email = 'e.stongvilas@vildoma.lt'
+        msg['From'] = sender_email
+        msg['To'] = el_pastas
 
         if email_theme == 1:
+            msg.set_content(f'Kaina {close}')
+            msg['Subject'] = f'Reikia pirkti {valiuta}'
             with smtplib.SMTP_SSL(outgoing_server, port, context=context) as server:
-                server.login(el_pastas, password)
-                server.sendmail(sender_email, el_pastas, message_reikia_pirkti)
+                server.login(sender_email, password)
+                server.sendmail(sender_email, el_pastas, msg.as_string())
 
         if email_theme - 1:
+            msg.set_content(f'Kaina {close}')
+            msg['Subject'] = f'Reikia parduoti {valiuta}'
             with smtplib.SMTP_SSL(outgoing_server, port, context=context) as server:
-                server.login(el_pastas, password)
-                server.sendmail(sender_email, el_pastas, message_reikia_parduoti)
+                server.login(sender_email, password)
+                server.sendmail(sender_email, el_pastas, msg.as_string())
 
+    # periodinio atnaujinimo laikmacio ijungimas
     def startTimer(self):
+        global sender_email
+        global password
+        global outgoing_server
+        global port
+        try:
+            with open('el_pasto_duomenys.pkl', 'rb') as pickle_in:
+                el_pasto_duomenys = pickle.load(pickle_in)
+                sender_email = el_pasto_duomenys[0]
+                password = el_pasto_duomenys[1]
+                outgoing_server = el_pasto_duomenys[2]
+                port = int(el_pasto_duomenys[3])
+        except:
+            self.show_message('Nepvyko įkelti el_pasto serverio duomenų.', 'critical')
+            return
+        if sender_email == '' or password == '' or outgoing_server == '' or port == '':
+            self.show_message('Nesuvesti el_pasto serverio duomenys.', 'critical')
+            return
+
         self.timer.start(1000)
         self.start_button.setEnabled(False)
         self.end_button.setEnabled(True)
         qw.myMessage.setText("Duomenų atnaujinimas kas 30s")
         self.show_message('Duomenų atnaujinimas pradėtas', 'information')
 
+    # periodinio atnaujinimo laikmacio isjungimas
     def endTimer(self):
         self.timer.stop()
         self.start_button.setEnabled(True)
@@ -435,6 +501,7 @@ class AnotherWindow(QWidget):
         self.show_message('Duomenų atnaujinimas sustabdytas', 'information')
 
 
+# Nustatymu lango is meniu pasirinkimas
 def onMyToolBarButtonClick():
     global w
 
@@ -444,6 +511,7 @@ def onMyToolBarButtonClick():
         w.show()
 
 
+# El_pasto serverio prisijungimo duomenu ivedimo lango pasirinkimas
 def onMyToolBarButtonClick2():
     global el_pasto_nustatymo_langas
 
@@ -454,8 +522,11 @@ def onMyToolBarButtonClick2():
         el_pasto_nustatymo_langas.show()
 
 
+# Kripto valiutos duomenus gavimo, apdorojmo metodo iskvietimas
 def get_crypto_data(crypto):
+
     q = cbpGetHistoricRates(crypto, 3600)
+
     df = pd.DataFrame.from_records(q, columns=['Date', 'Low', 'High', 'Open', 'Close', 'Volume'])
     df = df.astype({'Date': 'datetime64[ns]'})
     HA(df)
@@ -464,6 +535,7 @@ def get_crypto_data(crypto):
     return df
 
 
+# Valiutu kurso grafiko atvaizdavimo klase
 class Grafikas(QGraphicsView):
     def __init__(self):
         super().__init__()
@@ -471,8 +543,8 @@ class Grafikas(QGraphicsView):
     def update(self, df, ax, ax2, curency):
         global plots
 
-        ax.reset()  # remove previous plots
-        # remove previous plots
+        ax.reset()
+
         ax2.reset()
 
         candles = df[['Date', 'HA_Open', 'HA_Close', 'HA_High', 'HA_Low']]
@@ -495,13 +567,14 @@ class Grafikas(QGraphicsView):
         close_value = lst_row['Close'].values
         rsi_value = lst_row['rsi'].values
         ema_200_value = lst_row['EMA_200'].values
-        print(f'Close value:{close_value[0]}')
-        print(f'RSI values: {rsi_value[0]}')
-        print(f'EMA_200 values: {ema_200_value[0]}')
+        # print(f'Close value:{close_value[0]}')
+        # print(f'RSI values: {rsi_value[0]}')
+        # print(f'EMA_200 values: {ema_200_value[0]}')
         valiutos_duomenys = [close_value[0], rsi_value[0], ema_200_value[0]]
         return valiutos_duomenys
 
 
+# Tabuose esanciu grafiku atnaujinimas
 def atnaujinti_tabus():
     global tabs
     global flag
@@ -532,11 +605,12 @@ def atnaujinti_tabus():
 valiuta = get_currrency_list()
 w = None
 el_pasto_nustatymo_langas = None
+# Pagrindinio lango meniu sudarymas
 menu = qw.menuBar()
 button_action = QAction("&Sekimo nustatymai")
 button_action.triggered.connect(onMyToolBarButtonClick)
 
-button_action2 = QAction("&El_pasto nustatymai")
+button_action2 = QAction("&El_pašto nustatymai")
 button_action2.triggered.connect(onMyToolBarButtonClick2)
 
 file_menu = menu.addMenu("&Nustatymai")
@@ -555,5 +629,5 @@ atnaujinti_tabus()
 fplt.show(qt_exec=False)
 qw.show()
 win.show()
-
+print('Pagaliau užsikrovė')
 app.exec_()

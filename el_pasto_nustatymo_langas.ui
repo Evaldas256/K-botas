@@ -10,20 +10,23 @@
     <height>250</height>
    </rect>
   </property>
+  <property name="contextMenuPolicy">
+   <enum>Qt::NoContextMenu</enum>
+  </property>
   <property name="windowTitle">
-   <string>El_pasto nustatymai</string>
+   <string>El_pašto nustatymai</string>
   </property>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>10</y>
-     <width>47</width>
-     <height>13</height>
+     <width>81</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>El.paštas</string>
+    <string>Vartotojo vardas</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="email_lineEdit">
@@ -31,7 +34,7 @@
     <rect>
      <x>10</x>
      <y>40</y>
-     <width>113</width>
+     <width>131</width>
      <height>20</height>
     </rect>
    </property>
@@ -54,7 +57,7 @@
     <rect>
      <x>10</x>
      <y>90</y>
-     <width>113</width>
+     <width>131</width>
      <height>20</height>
     </rect>
    </property>
@@ -103,7 +106,7 @@
     <rect>
      <x>10</x>
      <y>190</y>
-     <width>113</width>
+     <width>131</width>
      <height>20</height>
     </rect>
    </property>
@@ -126,7 +129,7 @@
     <rect>
      <x>10</x>
      <y>140</y>
-     <width>113</width>
+     <width>131</width>
      <height>20</height>
     </rect>
    </property>

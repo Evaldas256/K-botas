@@ -1,19 +1,19 @@
-from PyQt5 import QtWidgets, uic
-import sys
+from PyQt5 import QtWidgets, uic,QtGui
 import pickle
-from PyQt5.QtWidgets import (QApplication, QComboBox, QGridLayout,QMessageBox,
-                             QLabel, QLineEdit,
-                             QTableWidgetItem,
-                             QWidget)
+from PyQt5.QtWidgets import (QMessageBox, QLineEdit)
+from PyQt5.QtCore import Qt
+
 class Ui(QtWidgets.QDialog):
     def __init__(self):
-        super(Ui, self).__init__() # Call the inherited classes __init__ method
-        uic.loadUi('el_pasto_nustatymo_langas.ui', self) # Load the .ui file
+        super(Ui, self).__init__()  # Call the inherited classes __init__ method
+        uic.loadUi('el_pasto_nustatymo_langas.ui', self)  # Load the .ui file
         self.okButton.clicked.connect(self.issaugoti_nustatymus)
         self.cancelButton.clicked.connect(self.iseiti_is_formos)
         self.msg = QMessageBox()
         self.msg.setWindowTitle("Kripto botas")
         self.password_lineEdit.setEchoMode(QLineEdit.Password)
+        self.setWindowIcon(QtGui.QIcon('ikonos/ikona.ico'))
+        self.setWindowFlags(self.windowFlags() ^ Qt.WindowContextHelpButtonHint)
         try:
             with open('el_pasto_duomenys.pkl', 'rb') as pickle_in:
                 self.el_pasto_duomenys = pickle.load(pickle_in)
@@ -29,28 +29,36 @@ class Ui(QtWidgets.QDialog):
 
     def iseiti_is_formos(self):
         self.close()
+
     def issaugoti_nustatymus(self):
-        self.el_pastas=self.email_lineEdit.text()
-        if self.check_if_email_valid(self.el_pastas)==False:
-            self.show_message('Neteisinngas el_pašto formatas','critical')
+        global el_pasto_duomenys
+        global sender_email
+        global password
+        global outgoing_server
+        global port
+        self.el_pastas = self.email_lineEdit.text()
+        if self.check_if_email_valid(self.el_pastas) == False:
+            self.show_message('Neteisinngas el_pašto formatas', 'critical')
             return
-        self.slaptazodis=self.password_lineEdit.text()
-        self.iseinantis_serveris=self.outgoing_server_lineEdit.text()
-        self.portas=self.port_lineEdit.text()
-        if self.check_if_port_valid(self.portas)==False:
+        self.slaptazodis = self.password_lineEdit.text()
+        self.iseinantis_serveris = self.outgoing_server_lineEdit.text()
+        self.portas = self.port_lineEdit.text()
+        if self.check_if_port_valid(self.portas) == False:
             self.show_message('Porto numeris netinkamo formato arba reikšmės', 'critical')
             return
-        self.el_pasto_duomenys=[self.el_pastas,self.slaptazodis,self.iseinantis_serveris,self.portas]
+        self.el_pasto_duomenys = [self.el_pastas, self.slaptazodis, self.iseinantis_serveris, self.portas]
         with open('el_pasto_duomenys.pkl', 'wb') as pickle_out:
             pickle.dump(self.el_pasto_duomenys, pickle_out)
-        self.show_message('Duomenys sėkmingai išsaugoti','information')
-    def show_message(self,message,type):
+        self.show_message('Duomenys sėkmingai išsaugoti', 'information')
+
+    def show_message(self, message, type):
         self.msg.setText(message)
-        if type=='critical':
+        if type == 'critical':
             self.msg.setIcon(QMessageBox.Critical)
-        if type=='information':
+        if type == 'information':
             self.msg.setIcon(QMessageBox.Information)
         x = self.msg.exec_()  # this will show our messagebox
+
     def check_if_email_valid(self, email):
         result = email.find('@')
         result2 = email.find('.')
@@ -59,12 +67,13 @@ class Ui(QtWidgets.QDialog):
         else:
             atsakymas = False
         return atsakymas
-    def check_if_port_valid (self,port):
-        atsakymas=False
+
+    def check_if_port_valid(self, port):
+        atsakymas = False
         try:
-            portas=int(port)
-            if portas>=0 and portas<=65536:
-                atsakymas=True
+            portas = int(port)
+            if portas >= 0 and portas <= 65536:
+                atsakymas = True
         except:
-            atsakymas=False
+            atsakymas = False
         return atsakymas
